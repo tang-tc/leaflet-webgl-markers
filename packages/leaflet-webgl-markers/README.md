@@ -1,5 +1,7 @@
 # leaflet-webgl-markers
 
+[![npm version](https://img.shields.io/npm/v/leaflet-webgl-markers)](https://www.npmjs.com/package/leaflet-webgl-markers)
+
 Leaflet plugin for rendering **millions of point markers** on a single WebGL canvas:
 GPU Mercator projection + FBO picking + zero redraw while dragging/zooming.
 
@@ -25,7 +27,8 @@ GPU Mercator projection + FBO picking + zero redraw while dragging/zooming.
 npm install leaflet-webgl-markers
 ```
 
-Peer dependency: `leaflet@^1.9.0` (install it yourself).
+Peer dependency: `leaflet@^1.9.0` (install it yourself). `@types/leaflet` is
+shipped as a regular dependency, so TypeScript users get the types automatically.
 
 > ESM-only: there is no `main` field; you need a resolver that understands the
 > `exports` field (modern bundlers).
@@ -252,21 +255,11 @@ at `src/overlay/CustomCanvasLayer.ts` for details.
 
 ### Hover pipeline & suspension
 
-- The layer listens to the map's `mousemove` with rAF frame coalescing
-  (last-event-wins): multiple moves in one frame produce one pick at the last
-  position;
-- while the view is moving (`canvasLayer.isAligned() === false`) hover is
-  suspended (checked both when the event arrives and when the rAF callback runs)
-  and resumes afterwards;
 - after data changes (add / remove / update / setMarkers / compact) and before
   the next frame renders, picking keeps the previous frame's semantics
-  (what-you-see-is-what-you-hit) and can never mismatch across markers — pixels
-  and the decode table are always from the same frame; hover stays suspended
-  during move/zoom animations;
+  (what-you-see-is-what-you-hit) and can never mismatch across markers;
 - pointers over popups / tooltips / controls / DOM markers are treated as blank
   space (leaving the hovered marker fires `mouseout`);
-- a pointer leaving the map container synthesizes `mouseout` (`reason:'move'`)
-  and resets hover state;
 - users who need mousemove-level tracking should listen to the map's
   `mousemove` themselves; this layer exposes no pick API.
 
@@ -340,22 +333,11 @@ map.on('zoomend', () => {
 - if the budget is still exceeded at the size floor, subsampling the marker count
   is the next lever; it is not built in.
 
-### marker.size vs setIconSize
-
-- `marker.size` is **absolute pixels** (CSS) and overrides the layer default;
-  `null` (the default) follows the layer `iconSize`.
-- `setIconSize(n)` only affects markers whose `marker.size` is null; markers with
-  an explicit `marker.size` keep their absolute pixels.
-
 ### Picking & multiple library copies
 
-Pick colors encode the **layer-internal storage slot index** (slot + 1 written
-into 24-bit RGB; `0x000000` is reserved for "no hit"), not the global marker id.
-The package is ESM-only, so dual-format loading is a non-issue; if a page loads
-two copies of the library (e.g. two leaflet versions), passing a marker across
-copies is rejected by the `instanceof` check in `addMarker`. Above ~16.7M slots
-the encoding wraps and the library `console.warn`s (that is ~700MB of GPU buffer
-— practically unreachable).
+Pick colors encode the **layer-internal storage slot index**, not the global
+marker id. Passing a marker across two loaded copies of the library is rejected
+by the `instanceof` check in `addMarker`.
 
 ### Context loss recovery
 

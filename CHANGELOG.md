@@ -2,6 +2,11 @@
 
 All notable changes to `leaflet-webgl-markers` are documented here.
 
+## 0.2.1 — 2026-08-19
+
+- Ship `@types/leaflet` as a regular dependency so TypeScript consumers no
+  longer need to install it manually.
+
 ## 0.2.0 — 2026-08-19
 
 First public release.
