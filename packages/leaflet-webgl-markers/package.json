@@ -1,0 +1,63 @@
+{
+  "name": "leaflet-webgl-markers",
+  "version": "0.2.0",
+  "description": "Leaflet WebGL plugin for rendering millions of point markers — GPU Mercator projection + FBO picking",
+  "type": "module",
+  "module": "./dist/leaflet-webgl-markers.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/leaflet-webgl-markers.js",
+      "default": "./dist/leaflet-webgl-markers.js"
+    },
+    "./popup": {
+      "types": "./dist/popup/index.d.ts",
+      "import": "./dist/popup.js",
+      "default": "./dist/popup.js"
+    },
+    "./popup.css": {
+      "style": "./dist/popup.css",
+      "default": "./dist/popup.css"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "./dist/popup.css"
+  ],
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly && node scripts/copy-assets.mjs",
+    "build:watch": "vite build --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "leaflet": "^1.9.0"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.0",
+    "typescript": "~5.7.0",
+    "vite": "^6.0.0"
+  },
+  "keywords": [
+    "leaflet",
+    "webgl",
+    "markers",
+    "map",
+    "visualization",
+    "large-data"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tang-tc/leaflet-webgl-markers.git"
+  },
+  "homepage": "https://github.com/tang-tc/leaflet-webgl-markers#readme",
+  "bugs": {
+    "url": "https://github.com/tang-tc/leaflet-webgl-markers/issues"
+  }
+}

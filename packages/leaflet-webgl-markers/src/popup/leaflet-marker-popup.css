@@ -1,0 +1,140 @@
+/* ──────── Leaflet Marker Popup ────────
+ * Positioned through a Leaflet Marker (position: relative).
+ * Visuals reuse the CustomPopup cyberpunk animation scheme.
+ * Variables are scoped inside .pp-root to avoid polluting the host page.
+ * ──────────────────────────────────── */
+
+.pp-root {
+  --pp-cyan:        #38e1ff;
+  --pp-cyan-glow:   #29baf1;
+  --pp-cyan-dim:    #03abb4;
+  --pp-bg:          rgba(56, 225, 255, 0.29);
+  --pp-text:        #ffffff;
+  --pp-accent:      #f09e28;
+  --pp-text-shadow: 1px 1px 5px rgba(0, 37, 32, 0.82);
+  --pp-radius:      50px 0 50px 0;
+
+  position: relative;
+  z-index: 1000;
+}
+
+/* Slash line — extends down-left from the bottom */
+.pp-line {
+  position: absolute;
+  left: 8px;
+  bottom: 0;
+  width: 60px;
+  height: 1px;
+  background: var(--pp-cyan);
+  transform-origin: bottom left;
+  transform: rotate(-50deg);
+  filter: drop-shadow(1px 0 2px var(--pp-cyan-dim));
+  animation: pp-slash 0.5s ease-out;
+}
+
+@keyframes pp-slash {
+  from { transform: rotate(-50deg) scaleX(0); }
+  to   { transform: rotate(-50deg) scaleX(1); }
+}
+
+/* Card panel */
+.pp-card {
+  position: absolute;
+  left: 45px;
+  bottom: 45px;
+  width: 220px;
+  padding: 22px 16px 14px;
+  border-radius: var(--pp-radius);
+  border: 1px solid var(--pp-cyan);
+  background: var(--pp-bg);
+  box-shadow: 0 0 10px 2px var(--pp-cyan-glow);
+  backdrop-filter: blur(12px);
+  color: var(--pp-text);
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 14px;
+  animation: pp-card-in 0.6s ease-out both;
+}
+
+@keyframes pp-card-in {
+  from {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: 0 0 0 transparent;
+  }
+  to {
+    border-color: var(--pp-cyan);
+    background: var(--pp-bg);
+    box-shadow: 0 0 10px 2px var(--pp-cyan-glow);
+  }
+}
+
+/* Title badge */
+.pp-badge {
+  position: absolute;
+  top: 14px;
+  right: 0;
+  width: 85%;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--pp-text);
+  text-shadow: var(--pp-text-shadow);
+  background: linear-gradient(to left, #4cdef9, rgba(76, 222, 249, 0.42));
+  border-radius: 28px 0 0 0;
+  animation: pp-badge-in 0.5s ease-out both;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+@keyframes pp-badge-in {
+  from { width: 0; }
+  to   { width: 85%; }
+}
+
+/* Close button */
+.pp-close {
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  border: 0;
+  background: none;
+  color: var(--pp-text);
+  text-shadow: 2px 2px 2px #022122;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  animation: pp-fade-in 0.4s 0.1s ease-out both;
+}
+
+/* Content area */
+.pp-body {
+  padding-top: 36px;
+  animation: pp-fade-in 0.4s 0.1s ease-out both;
+}
+
+.pp-li {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.pp-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pp-text);
+  text-shadow: var(--pp-text-shadow);
+}
+.pp-label::after { content: '：'; }
+
+.pp-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pp-accent);
+  text-shadow: var(--pp-text-shadow);
+}
+
+@keyframes pp-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
