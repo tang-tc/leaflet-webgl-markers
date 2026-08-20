@@ -39,6 +39,18 @@ body,
   color: #d8f4ff;
   font: 13px/1.5 system-ui, sans-serif;
   backdrop-filter: blur(10px);
+  animation: panel-in 0.5s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .controls h1 {
@@ -74,10 +86,16 @@ body,
   color: #9fd9ec;
   font: 12px/1 system-ui, sans-serif;
   cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
 }
 
 .seg button:hover {
   background: rgba(56, 225, 255, 0.12);
+  transform: translateY(-1px);
 }
 
 .seg button.active {
@@ -106,6 +124,20 @@ body,
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  box-shadow: 0 0 5px currentColor;
+  animation: swatch-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes swatch-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    box-shadow: 0 0 3px currentColor;
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 8px currentColor;
+  }
 }
 
 .stats {

@@ -212,6 +212,75 @@ function WebGLOverlay({ dataset, count, onStats }) {
     let cancelled = false
     let activePopup = null
     let currentSize = null
+    let hoverMarker = null
+    let hoverRaf = null
+    let popMarkerId = null
+    let popRaf = null
+
+    const baseSize = () => currentSize ?? cfg.iconSize
+
+    const stopPop = () => {
+      if (popRaf) {
+        cancelAnimationFrame(popRaf)
+        popRaf = null
+      }
+      if (popMarkerId != null) {
+        layer.updateMarker(popMarkerId, { size: null })
+        popMarkerId = null
+      }
+    }
+
+    const stopPulse = () => {
+      if (hoverRaf) {
+        cancelAnimationFrame(hoverRaf)
+        hoverRaf = null
+      }
+      if (hoverMarker) {
+        layer.updateMarker(hoverMarker.id, { size: null })
+        hoverMarker = null
+      }
+    }
+
+    const startPulse = (marker) => {
+      stopPulse()
+      hoverMarker = marker
+      const start = performance.now()
+      const tick = () => {
+        if (hoverMarker !== marker) return
+        const t = (performance.now() - start) / 1000
+        const size = Math.max(
+          3,
+          Math.round(baseSize() * (1 + 0.16 * Math.sin(t * Math.PI * 2 * 0.9)) * 10) / 10
+        )
+        layer.updateMarker(marker.id, { size })
+        hoverRaf = requestAnimationFrame(tick)
+      }
+      hoverRaf = requestAnimationFrame(tick)
+    }
+
+    const playPop = (marker) => {
+      stopPop()
+      stopPulse()
+      popMarkerId = marker.id
+      const start = performance.now()
+      const duration = 260
+      const tick = () => {
+        if (popMarkerId !== marker.id) return
+        const t = (performance.now() - start) / duration
+        if (t >= 1) {
+          popRaf = null
+          popMarkerId = null
+          layer.updateMarker(marker.id, { size: null })
+          return
+        }
+        const factor = 1 + 0.7 * Math.sin(Math.PI * Math.pow(t, 0.55))
+        layer.updateMarker(marker.id, {
+          size: Math.max(3, baseSize() * factor),
+        })
+        popRaf = requestAnimationFrame(tick)
+      }
+      popRaf = requestAnimationFrame(tick)
+    }
 
     const report = () => {
       let visible = null
@@ -237,14 +306,17 @@ function WebGLOverlay({ dataset, count, onStats }) {
       }
     }
 
-    layer.on('mouseover', () => {
+    layer.on('mouseover', (e) => {
       map.getContainer().style.cursor = 'pointer'
+      startPulse(e.marker)
     })
     layer.on('mouseout', () => {
       map.getContainer().style.cursor = ''
+      stopPulse()
     })
 
     layer.on('click', (e) => {
+      playPop(e.marker)
       if (activePopup) {
         activePopup.close()
         activePopup = null
@@ -308,6 +380,8 @@ function WebGLOverlay({ dataset, count, onStats }) {
 
     return () => {
       cancelled = true
+      stopPulse()
+      stopPop()
       map.off('click', closeOnBlank)
       map.off('moveend', report)
       map.off('zoomend', applySizeForZoom)
@@ -315,6 +389,21 @@ function WebGLOverlay({ dataset, count, onStats }) {
       layer.remove()
     }
   }, [map, dataset, count, onStats])
+
+  return null
+}
+
+// Cinematic opening: fly from a world view down to the default region.
+function IntroFlight() {
+  const map = useMap()
+
+  useEffect(() => {
+    map.stop()
+    const timer = window.setTimeout(() => {
+      map.flyTo([35, 105], 5, { duration: 2.4 })
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [map])
 
   return null
 }
@@ -409,8 +498,8 @@ export default function App() {
   return (
     <div className="app">
       <MapContainer
-        center={[35, 105]}
-        zoom={5}
+        center={[20, 30]}
+        zoom={2}
         scrollWheelZoom
         style={{ width: '100%', height: '100%' }}
       >
@@ -419,6 +508,7 @@ export default function App() {
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           subdomains="abcd"
         />
+        <IntroFlight />
         <WebGLOverlay dataset={dataset} count={count} onStats={handleStats} />
       </MapContainer>
       <Controls
