@@ -11,9 +11,6 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   MapContainer,
   TileLayer,
-  Marker,
-  Popup,
-  Circle,
   useMap,
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -206,7 +203,7 @@ function WebGLOverlay({ dataset, count, onStats }) {
     const textureUrl =
       cfg.texture === 'circle'
         ? circleTextureUrl()
-        : `${baseUrl}airplane.png`
+        : `${baseUrl}airplane.svg`
 
     const layer = new WebGLMarkerLayer({ iconSize: cfg.iconSize, textureUrl })
     layer.addTo(map)
@@ -322,23 +319,6 @@ function WebGLOverlay({ dataset, count, onStats }) {
   return null
 }
 
-// ───────────────────────── native Leaflet coexistence ────────────────────────
-
-function DemoLayers() {
-  return (
-    <>
-      <Circle
-        center={[35, 105]}
-        radius={800000}
-        pathOptions={{ color: '#38e1ff', fillColor: '#38e1ff', fillOpacity: 0.08 }}
-      />
-      <Marker position={[35, 105]}>
-        <Popup>A native Leaflet marker on top of the WebGL layer.</Popup>
-      </Marker>
-    </>
-  )
-}
-
 // ─────────────────────────────── controls ───────────────────────────────
 
 const SYNTHETIC_COUNTS = [50000, 200000, 1000000]
@@ -440,7 +420,6 @@ export default function App() {
           subdomains="abcd"
         />
         <WebGLOverlay dataset={dataset} count={count} onStats={handleStats} />
-        <DemoLayers />
       </MapContainer>
       <Controls
         dataset={dataset}
