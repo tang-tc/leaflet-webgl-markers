@@ -25,3 +25,123 @@ body,
   width: 100%;
   position: relative;
 }
+
+.controls {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1200;
+  width: 230px;
+  padding: 14px;
+  border: 1px solid rgba(56, 225, 255, 0.35);
+  border-radius: 12px;
+  background: rgba(8, 14, 22, 0.86);
+  color: #d8f4ff;
+  font: 13px/1.5 system-ui, sans-serif;
+  backdrop-filter: blur(10px);
+}
+
+.controls h1 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.controls h1 a {
+  color: #38e1ff;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.seg button {
+  flex: 1 1 auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(56, 225, 255, 0.35);
+  border-radius: 7px;
+  background: transparent;
+  color: #9fd9ec;
+  font: 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.seg button:hover {
+  background: rgba(56, 225, 255, 0.12);
+}
+
+.seg button.active {
+  background: rgba(56, 225, 255, 0.22);
+  color: #ffffff;
+  border-color: #38e1ff;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 4px 0 12px;
+  color: #b8dcec;
+  font-size: 12px;
+}
+
+.legend div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  padding: 9px 10px;
+  border: 1px solid rgba(56, 225, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.stats div {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats span {
+  color: #79a8bd;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stats strong {
+  font-size: 14px;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 12px 0 0;
+  color: #6f97aa;
+  font-size: 11px;
+}
+
+.note code {
+  color: #9fd9ec;
+}
