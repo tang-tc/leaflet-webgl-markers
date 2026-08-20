@@ -14,6 +14,7 @@ import {
   useMap,
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
 import { WebGLMarker, WebGLMarkerLayer } from 'leaflet-webgl-markers'
 import { openMarkerPopup } from 'leaflet-webgl-markers/popup'
 import 'leaflet-webgl-markers/popup.css'
@@ -38,6 +39,76 @@ function hslToRgb(h, s, l) {
     return l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)))
   }
   return [f(0), f(8), f(4)]
+}
+
+// Great-circle interpolation + initial bearing (radians, 0 = north, clockwise).
+function greatCircle(lat1, lng1, lat2, lng2, f) {
+  const r1 = (lat1 * Math.PI) / 180
+  const r2 = (lat2 * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a = Math.sin(r1) * Math.sin(r2) + Math.cos(r1) * Math.cos(r2) * Math.cos(dLng)
+  const d = Math.acos(Math.min(1, Math.max(-1, a)))
+  if (d < 1e-9) return [lat1, lng1]
+  const A = Math.sin((1 - f) * d) / Math.sin(d)
+  const B = Math.sin(f * d) / Math.sin(d)
+  const x = A * Math.cos(r1) * Math.cos((lng1 * Math.PI) / 180) + B * Math.cos(r2) * Math.cos((lng2 * Math.PI) / 180)
+  const y = A * Math.cos(r1) * Math.sin((lng1 * Math.PI) / 180) + B * Math.cos(r2) * Math.sin((lng2 * Math.PI) / 180)
+  const z = A * Math.sin(r1) + B * Math.sin(r2)
+  return [(Math.atan2(z, Math.sqrt(x * x + y * y)) * 180) / Math.PI, (Math.atan2(y, x) * 180) / Math.PI]
+}
+
+function bearing(lat1, lng1, lat2, lng2) {
+  const r1 = (lat1 * Math.PI) / 180
+  const r2 = (lat2 * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const y = Math.sin(dLng) * Math.cos(r2)
+  const x = Math.cos(r1) * Math.sin(r2) - Math.sin(r1) * Math.cos(r2) * Math.cos(dLng)
+  return Math.atan2(y, x)
+}
+
+const HUB_IATAS = [
+  'JFK', 'LHR', 'PEK', 'SFO', 'SIN', 'DXB', 'HND', 'SYD', 'LAX', 'CDG',
+  'FRA', 'AMS', 'ICN', 'HKG', 'IST', 'GRU', 'JNB', 'MEX', 'BOM', 'DEL',
+  'YYZ', 'ORD', 'ATL', 'MIA', 'MAD', 'FCO', 'ZRH', 'VIE', 'SEA', 'YVR',
+  'AKL', 'KUL', 'BKK', 'DOH', 'AUH', 'RUH', 'CAI', 'LOS', 'NBO', 'CPT',
+]
+
+async function buildFlights(baseUrl) {
+  const res = await fetch(`${baseUrl}data/airports.json`)
+  if (!res.ok) throw new Error(`airports.json ${res.status}`)
+  const rows = await res.json()
+  const byIata = new Map()
+  for (const [iata, name, city, country, , lat, lng] of rows) {
+    if (iata) byIata.set(iata, { iata, name, city, country, lat, lng })
+  }
+
+  const hubs = HUB_IATAS.map((code) => byIata.get(code)).filter(Boolean)
+  const routes = []
+  for (let i = 0; i < hubs.length; i++) {
+    const from = hubs[i]
+    const to = hubs[(i * 7 + 3) % hubs.length]
+    const latlngs = []
+    for (let s = 0; s <= 64; s++) {
+      latlngs.push(greatCircle(from.lat, from.lng, to.lat, to.lng, s / 64))
+    }
+    const marker = new WebGLMarker({
+      latlng: [from.lat, from.lng],
+      rotation: bearing(from.lat, from.lng, to.lat, to.lng),
+      color: [0.35, 0.88, 1.0],
+      data: { from: `${from.iata} · ${from.city}`, to: `${to.iata} · ${to.city}` },
+    })
+    routes.push({
+      marker,
+      from,
+      to,
+      latlngs,
+      progress: Math.random() * 0.9,
+      direction: 1,
+      // One leg in 25-55 seconds.
+      speed: 1 / (25 + Math.random() * 30),
+    })
+  }
+  return routes
 }
 
 function makeSyntheticMarkers(count) {
@@ -191,6 +262,12 @@ const DATASETS = {
       ['#59bfe6', 'M 2.5'],
     ],
   },
+  flights: {
+    label: 'Flights',
+    iconSize: 14,
+    texture: 'airplane',
+    legend: [['#59d2ff', 'Planes on great-circle routes']],
+  },
 }
 
 // ─────────────────────────────── layer overlay ───────────────────────────────
@@ -202,6 +279,7 @@ function WebGLOverlay({
   onQuakeRange,
   quakeFilter = { enabled: false, current: 0 },
   playing = false,
+  flightsPlaying = true,
 }) {
   const map = useMap()
   const layerRef = useRef(null)
@@ -209,6 +287,11 @@ function WebGLOverlay({
   const sortedRef = useRef([]) // [{ t, m }] sorted by quake time
   const shownRef = useRef(0)
   const popsRef = useRef(new Map())
+  const flightsPlayingRef = useRef(flightsPlaying)
+
+  useEffect(() => {
+    flightsPlayingRef.current = flightsPlaying
+  }, [flightsPlaying])
 
   // One-shot size pop; supports several concurrent markers (time-lapse ticks).
   const animatePop = useCallback((marker) => {
@@ -257,6 +340,10 @@ function WebGLOverlay({
     let hoverMarker = null
     let hovered = false
     let hoverRaf = null
+    let flightRaf = null
+    let polylines = []
+    let lastTick = 0
+    let lastStats = 0
 
     const baseSize = () => currentSize ?? cfg.iconSize
 
@@ -342,6 +429,12 @@ function WebGLOverlay({
           ['Country', d.country],
           ['Type', d.type],
         ]
+      } else if (dataset === 'flights') {
+        title = `${d.from} → ${d.to}`
+        rows = [
+          ['From', d.from],
+          ['To', d.to],
+        ]
       } else if (dataset === 'earthquakes') {
         title = `M ${d.mag.toFixed(1)} earthquake`
         rows = [
@@ -376,6 +469,59 @@ function WebGLOverlay({
       try {
         if (dataset === 'synthetic') {
           markers = makeSyntheticMarkers(count)
+        } else if (dataset === 'flights') {
+          const routes = await buildFlights(baseUrl)
+          if (cancelled) return
+          markers = routes.map((r) => r.marker)
+          polylines = routes.map((r) =>
+            L.polyline(r.latlngs, {
+              color: '#38e1ff',
+              weight: 1,
+              opacity: 0.22,
+              dashArray: '3 6',
+            }).addTo(map)
+          )
+          layer.setMarkers(markers)
+          applySizeForZoom()
+          report()
+          lastTick = performance.now()
+          const stepFlights = () => {
+            if (cancelled) return
+            const now = performance.now()
+            const dt = Math.min(0.05, (now - lastTick) / 1000)
+            lastTick = now
+            if (flightsPlayingRef.current) {
+              for (const r of routes) {
+                r.progress += r.direction * r.speed * dt
+                if (r.progress >= 1) {
+                  r.progress = 1
+                  r.direction = -1
+                } else if (r.progress <= 0) {
+                  r.progress = 0
+                  r.direction = 1
+                }
+                const [lat, lng] = greatCircle(
+                  r.from.lat,
+                  r.from.lng,
+                  r.to.lat,
+                  r.to.lng,
+                  r.progress
+                )
+                const rot =
+                  r.direction > 0
+                    ? bearing(r.from.lat, r.from.lng, r.to.lat, r.to.lng)
+                    : bearing(r.to.lat, r.to.lng, r.from.lat, r.from.lng)
+                layer.updateMarker(r.marker.id, { latlng: [lat, lng], rotation: rot })
+              }
+              if (now - lastStats > 500) {
+                lastStats = now
+                report()
+              }
+            }
+            flightRaf = requestAnimationFrame(stepFlights)
+          }
+          flightRaf = requestAnimationFrame(stepFlights)
+          return
         } else if (dataset === 'airports') {
           markers = await makeAirportMarkers(baseUrl)
         } else {
@@ -404,6 +550,9 @@ function WebGLOverlay({
     return () => {
       cancelled = true
       stopPulse()
+      if (flightRaf) cancelAnimationFrame(flightRaf)
+      for (const p of polylines) map.removeLayer(p)
+      polylines = []
       for (const raf of pops.values()) cancelAnimationFrame(raf)
       pops.clear()
       map.off('click', closeOnBlank)
@@ -475,6 +624,8 @@ function Controls({
   onTogglePlay,
   onScrub,
   onReset,
+  flightsPlaying,
+  onToggleFlights,
 }) {
   const cfg = DATASETS[dataset]
   const fmt = (n) => (n == null ? '—' : n.toLocaleString('en-US'))
@@ -562,6 +713,14 @@ function Controls({
         </div>
       )}
 
+      {dataset === 'flights' && (
+        <div className="seg">
+          <button type="button" onClick={onToggleFlights}>
+            {flightsPlaying ? 'Pause' : 'Play'}
+          </button>
+        </div>
+      )}
+
       <div className="legend">
         {cfg.legend.map(([color, label]) => (
           <div key={label}>
@@ -604,6 +763,7 @@ export default function App() {
   const [quakeRange, setQuakeRange] = useState(null)
   const [quakeFilter, setQuakeFilter] = useState({ enabled: false, current: 0 })
   const [playing, setPlaying] = useState(false)
+  const [flightsPlaying, setFlightsPlaying] = useState(true)
   const playFromRef = useRef(0)
 
   const handleStats = useCallback((next) => setStats(next), [])
@@ -615,7 +775,12 @@ export default function App() {
 
   const selectDataset = useCallback((key) => {
     setPlaying(false)
+    if (key === 'flights') setFlightsPlaying(true)
     setDataset(key)
+  }, [])
+
+  const toggleFlights = useCallback(() => {
+    setFlightsPlaying((v) => !v)
   }, [])
 
   const togglePlay = useCallback(() => {
@@ -684,6 +849,7 @@ export default function App() {
           onQuakeRange={handleQuakeRange}
           quakeFilter={quakeFilter}
           playing={playing}
+          flightsPlaying={flightsPlaying}
         />
       </MapContainer>
       <Controls
@@ -698,6 +864,8 @@ export default function App() {
         onTogglePlay={togglePlay}
         onScrub={handleScrub}
         onReset={handleReset}
+        flightsPlaying={flightsPlaying}
+        onToggleFlights={toggleFlights}
       />
     </div>
   )
