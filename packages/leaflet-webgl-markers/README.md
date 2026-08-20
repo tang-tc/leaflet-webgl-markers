@@ -53,7 +53,7 @@ layer.addTo(map)
 // Add markers
 const m = new WebGLMarker({
   latlng: [39.9, 116.4],
-  rotation: 0.5,                // radians; 0 = pointing north
+  rotation: 0.5,                // radians; 0 = north, positive = clockwise
   color: [0.8, 0.3, 0.2],       // RGB tint; [1, 1, 1] = no tint
   size: 60,                     // optional; overrides layer iconSize (CSS pixels)
   data: { flightId: 'CA1234' },
@@ -97,7 +97,7 @@ new WebGLMarker(opts | [lat, lng])
 | Option | Type | Default | Description |
 |------|------|------|------|
 | `latlng` | `L.LatLng \| [number, number]` | — | Geographic position (required) |
-| `rotation` | `number` | `0` | Rotation in radians; 0 = pointing north |
+| `rotation` | `number` | `0` | Rotation in radians; 0 = north, positive = clockwise |
 | `color` | `[number, number, number]` | `[1, 1, 1]` | RGB tint; `[1, 1, 1]` = no tint |
 | `size` | `number \| null` | `null` | Icon size in CSS pixels; `null` or `<= 0` follows the layer `iconSize` |
 | `visible` | `boolean` | `true` | When `false`, the vertex is pushed off screen: not rendered, not picked |

@@ -1,6 +1,6 @@
 {
   "name": "leaflet-webgl-markers",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Leaflet WebGL plugin for rendering millions of point markers — GPU Mercator projection + FBO picking",
   "type": "module",
   "module": "./dist/leaflet-webgl-markers.js",

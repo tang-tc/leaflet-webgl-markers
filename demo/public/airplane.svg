@@ -2,14 +2,17 @@
   <defs>
     <linearGradient id="fus" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffffff" />
-      <stop offset="1" stop-color="#c9f2ff" />
+      <stop offset="1" stop-color="#d9f4ff" />
     </linearGradient>
   </defs>
-  <path d="M32 18 L8 34 L15 37 L27 34 L30 39 L32 42 Z" fill="#38e1ff" />
-  <path d="M32 18 L56 34 L49 37 L37 34 L34 39 L32 42 Z" fill="#38e1ff" />
-  <path d="M32 45 L21 50 L23 53.5 L32 55 Z" fill="#8fd8ef" />
-  <path d="M32 45 L43 50 L41 53.5 L32 55 Z" fill="#8fd8ef" />
-  <rect x="28.5" y="3.5" width="7" height="51" rx="3.5" fill="url(#fus)" />
-  <rect x="30.8" y="45" width="2.4" height="13" rx="1.2" fill="#8fd8ef" />
-  <circle cx="32" cy="6" r="3.2" fill="#ffffff" />
+  <!-- Fuselage: wide at the tail, tapering to a sharp nose at the top. -->
+  <path d="M32 4 C37 14 39 26 39 43 L25 43 C25 26 27 14 32 4 Z" fill="url(#fus)" />
+  <!-- Swept wings. -->
+  <path d="M31 27 L31 39 L10 47 L14 33 Z" fill="#38e1ff" />
+  <path d="M33 27 L33 39 L54 47 L50 33 Z" fill="#38e1ff" />
+  <!-- Horizontal tailplane. -->
+  <rect x="24" y="51" width="16" height="5" rx="2.5" fill="#38e1ff" />
+  <!-- Subtle outline so the silhouette stays readable over bright tiles. -->
+  <path d="M32 4 C37 14 39 26 39 43 L25 43 C25 26 27 14 32 4 Z"
+        fill="none" stroke="#0b4f66" stroke-opacity="0.55" stroke-width="1.5" />
 </svg>

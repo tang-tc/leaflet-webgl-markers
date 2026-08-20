@@ -80,7 +80,10 @@ uniform sampler2D u_texture;
 void main() {
   vec2 uv = gl_PointCoord - 0.5;
   float c = cos(v_rotation);
-  float s = sin(v_rotation);
+  // Positive rotation is clockwise on screen (compass heading from north),
+  // which is the negative direction of the standard CCW rotation matrix in
+  // gl_PointCoord space.
+  float s = -sin(v_rotation);
   uv = vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
   uv += 0.5;
 
@@ -102,7 +105,8 @@ uniform sampler2D u_texture;
 void main() {
   vec2 uv = gl_PointCoord - 0.5;
   float c = cos(v_rotation);
-  float s = sin(v_rotation);
+  // Keep pick rotation identical to display rotation so hit areas line up.
+  float s = -sin(v_rotation);
   uv = vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
   uv += 0.5;
 

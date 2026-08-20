@@ -2,6 +2,11 @@
 
 All notable changes to `leaflet-webgl-markers` are documented here.
 
+## 0.2.3 — 2026-08-20
+
+- Fix marker rotation direction: positive radians now rotate clockwise on
+  screen (compass heading from north) in both the display and pick passes.
+
 ## 0.2.2 — 2026-08-20
 
 - Follow `flyTo` animations: the canvas now tracks pan+zoom per frame with a CSS

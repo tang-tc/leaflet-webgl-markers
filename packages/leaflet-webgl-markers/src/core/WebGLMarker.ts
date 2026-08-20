@@ -20,7 +20,7 @@ let _idCounter = 0
 export interface WebGLMarkerOptions {
   /** Geographic position — L.LatLng or a [lat, lng] array */
   latlng: L.LatLng | [number, number]
-  /** Rotation in radians; 0 = pointing north */
+  /** Rotation in radians; 0 = north, positive = clockwise */
   rotation?: number
   /** RGB tint; [1, 1, 1] = no tint */
   color?: [number, number, number]
@@ -44,7 +44,7 @@ export class WebGLMarker {
   /** Geographic position */
   latlng: L.LatLng
 
-  /** Rotation in radians; 0 = pointing north */
+  /** Rotation in radians; 0 = north, positive = clockwise */
   rotation: number
 
   /** RGB tint; [1, 1, 1] = no tint */
