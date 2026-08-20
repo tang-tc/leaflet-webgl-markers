@@ -42,14 +42,15 @@ function hslToRgb(h, s, l) {
 
 function makeSyntheticMarkers(count) {
   const rng = mulberry32(99)
-  const latRange = 54 - 18
-  const lngRange = 135 - 73
+  // Worldwide spread, like the real datasets (skip the poles).
+  const latMin = -60
+  const latMax = 75
   const markers = new Array(count)
   for (let i = 0; i < count; i++) {
-    const lat = 18 + rng() * latRange
-    const lng = 73 + rng() * lngRange
+    const lat = latMin + rng() * (latMax - latMin)
+    const lng = -180 + rng() * 360
     const rotation = rng() * Math.PI * 2
-    const hue = 0.65 - ((lat - 18) / latRange) * 0.6
+    const hue = 0.15 + ((lat - latMin) / (latMax - latMin)) * 0.6
     const [r, g, b] = hslToRgb(hue, 0.7 + rng() * 0.3, 0.5 + rng() * 0.2)
     markers[i] = new WebGLMarker({
       latlng: [lat, lng],
