@@ -242,7 +242,8 @@ const DATASETS = {
   },
   airports: {
     label: 'Airports',
-    iconSize: 11,
+    iconSize: 16,
+    lodFloor: 0.6,
     texture: 'airplane',
     legend: [
       ['#ffbd4d', 'Large'],
@@ -509,10 +510,17 @@ function WebGLOverlay({
                   r.to.lng,
                   r.progress
                 )
-                const rot =
-                  r.direction > 0
-                    ? bearing(r.from.lat, r.from.lng, r.to.lat, r.to.lng)
-                    : bearing(r.to.lat, r.to.lng, r.from.lat, r.from.lng)
+                // Heading = local tangent of the great-circle at the current
+                // position, so the nose follows the curved path.
+                const probe = Math.min(1, Math.max(0, r.progress + 0.01 * r.direction))
+                const [lat2, lng2] = greatCircle(
+                  r.from.lat,
+                  r.from.lng,
+                  r.to.lat,
+                  r.to.lng,
+                  probe
+                )
+                const rot = bearing(lat, lng, lat2, lng2)
                 layer.updateMarker(r.marker.id, { latlng: [lat, lng], rotation: rot })
               }
               if (now - lastStats > 500) {
