@@ -243,7 +243,8 @@ const DATASETS = {
   airports: {
     label: 'Airports',
     iconSize: 22,
-    lodFloor: 0.6,
+    minFactor: 0.38,
+    maxFactor: 1.3,
     texture: 'airplane',
     legend: [
       ['#ffbd4d', 'Large'],
@@ -266,7 +267,8 @@ const DATASETS = {
   flights: {
     label: 'Flights',
     iconSize: 26,
-    lodFloor: 0.65,
+    minFactor: 0.6,
+    maxFactor: 1,
     texture: 'airplane',
     legend: [['#59d2ff', 'Planes on great-circle routes']],
   },
@@ -393,8 +395,29 @@ function WebGLOverlay({
     const applySizeForZoom = () => {
       const z = map.getZoom()
       const f =
-        z <= 4 ? 0.45 : z <= 6 ? 0.6 : z <= 8 ? 0.75 : z <= 10 ? 0.9 : 1
-      const factor = Math.max(cfg.lodFloor ?? 0, f)
+        z <= 3
+          ? 0.38
+          : z <= 4
+            ? 0.45
+            : z <= 5
+              ? 0.55
+              : z <= 6
+                ? 0.65
+                : z <= 7
+                  ? 0.75
+                  : z <= 8
+                    ? 0.85
+                    : z <= 9
+                      ? 0.95
+                      : z <= 10
+                        ? 1.05
+                        : z <= 12
+                          ? 1.18
+                          : 1.3
+      const factor = Math.min(
+        cfg.maxFactor ?? 1,
+        Math.max(cfg.minFactor ?? 0.38, f)
+      )
       const next = Math.max(3, Math.round(cfg.iconSize * factor * 10) / 10)
       if (next !== currentSize) {
         currentSize = next
