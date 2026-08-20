@@ -1,11 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="fus" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" />
-      <stop offset="1" stop-color="#c9f2ff" />
-    </linearGradient>
-  </defs>
-
   <rect x="6" y="6" width="116" height="116" rx="26" fill="#0a141d" />
   <rect x="6" y="6" width="116" height="116" rx="26" fill="none" stroke="#38e1ff" stroke-opacity="0.4" stroke-width="2" />
 
@@ -18,16 +11,5 @@
     <ellipse cx="64" cy="64" rx="32" ry="40" stroke="#2f7d9c" stroke-width="1" />
     <line x1="24" y1="64" x2="104" y2="64" stroke="#2f7d9c" stroke-width="1" />
     <line x1="64" y1="24" x2="64" y2="104" stroke="#2f7d9c" stroke-width="1" />
-  </g>
-
-  <!-- plane mark -->
-  <g transform="translate(34,36) scale(0.88)">
-    <path d="M32 18 L8 34 L15 37 L27 34 L30 39 L32 42 Z" fill="#38e1ff" />
-    <path d="M32 18 L56 34 L49 37 L37 34 L34 39 L32 42 Z" fill="#38e1ff" />
-    <path d="M32 45 L21 50 L23 53.5 L32 55 Z" fill="#8fd8ef" />
-    <path d="M32 45 L43 50 L41 53.5 L32 55 Z" fill="#8fd8ef" />
-    <rect x="28.5" y="3.5" width="7" height="51" rx="3.5" fill="url(#fus)" />
-    <rect x="30.8" y="45" width="2.4" height="13" rx="1.2" fill="#8fd8ef" />
-    <circle cx="32" cy="6" r="3.2" fill="#ffffff" />
   </g>
 </svg>
