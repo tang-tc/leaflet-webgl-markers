@@ -264,7 +264,8 @@ const DATASETS = {
   },
   flights: {
     label: 'Flights',
-    iconSize: 14,
+    iconSize: 26,
+    lodFloor: 0.65,
     texture: 'airplane',
     legend: [['#59d2ff', 'Planes on great-circle routes']],
   },
@@ -392,7 +393,8 @@ function WebGLOverlay({
       const z = map.getZoom()
       const f =
         z <= 4 ? 0.45 : z <= 6 ? 0.6 : z <= 8 ? 0.75 : z <= 10 ? 0.9 : 1
-      const next = Math.max(3, Math.round(cfg.iconSize * f * 10) / 10)
+      const factor = Math.max(cfg.lodFloor ?? 0, f)
+      const next = Math.max(3, Math.round(cfg.iconSize * factor * 10) / 10)
       if (next !== currentSize) {
         currentSize = next
         sizeRef.current = next
