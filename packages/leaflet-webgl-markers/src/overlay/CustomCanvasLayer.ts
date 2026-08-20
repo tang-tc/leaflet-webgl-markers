@@ -159,6 +159,7 @@ export class CustomCanvasLayer extends L.Layer {
     const events: Record<string, (...args: any[]) => void> = {
       viewreset: this._reset as () => void,
       moveend: this._reset as () => void,
+      move: this._onMapMove as () => void,
     }
     // Matches the original code: _zoomAnimated is set to map._zoomAnimated in
     // _layerAdd (before getEvents() runs), and is true in modern browsers.
@@ -270,26 +271,46 @@ export class CustomCanvasLayer extends L.Layer {
   }
 
   /**
-   * Zoom-animation frame handler — applies a CSS transform so the canvas follows
-   * the zoom visually. Uses exactly the same math as Leaflet's built-in
-   * Renderer._updateTransform.
+   * During flyTo, Leaflet updates the view every frame through `_move` (no
+   * zoomanim, no mapPane movement), so the canvas must follow with a CSS
+   * transform of its own. Guarded by `e.flyTo`: ordinary drags already move the
+   * canvas through the mapPane and must not get a second transform.
    */
-  private _animateZoom(e: L.ZoomAnimEvent): void {
+  private _onMapMove(e: L.LeafletEvent & { flyTo?: boolean }): void {
+    if (!e.flyTo) return
+    this._applyViewTransform(this._map!.getCenter(), this._map!.getZoom())
+  }
+
+  /**
+   * Applies a CSS transform that makes the (old-view) canvas content match the
+   * given center/zoom. Shared by the zoom animation and flyTo; the math is the
+   * same as Leaflet's built-in Renderer._updateTransform.
+   */
+  private _applyViewTransform(center: L.LatLng, zoom: number): void {
     if (this._zoom === undefined || !this._container || !this._map) return
 
-    const scale = this._map.getZoomScale(e.zoom, this._zoom)
+    const scale = this._map.getZoomScale(zoom, this._zoom)
     const viewHalf = this._map.getSize().divideBy(2)
 
     const map = this._map as MapInternals
-    const currentCenterPoint = map.project(this._center!, e.zoom)
+    const currentCenterPoint = map.project(this._center!, zoom)
 
     const topLeftOffset = viewHalf
       .multiplyBy(-scale)
       .add(currentCenterPoint)
-      .subtract(map._getNewPixelOrigin(e.center, e.zoom))
+      .subtract(map._getNewPixelOrigin(center, zoom))
 
     this._zoomTransformApplied = true
     L.DomUtil.setTransform(this._container, topLeftOffset, scale)
+  }
+
+  /**
+   * Zoom-animation frame handler — applies a CSS transform so the canvas follows
+   * the zoom visually.
+   */
+  private _animateZoom(e: L.ZoomAnimEvent): void {
+    if (this._zoom === undefined || !this._container || !this._map) return
+    this._applyViewTransform(e.center, e.zoom)
   }
 
   private _render(): void {

@@ -2,6 +2,11 @@
 
 All notable changes to `leaflet-webgl-markers` are documented here.
 
+## 0.2.2 — 2026-08-20
+
+- Follow `flyTo` animations: the canvas now tracks pan+zoom per frame with a CSS
+  transform instead of staying frozen until `moveend`.
+
 ## 0.2.1 — 2026-08-19
 
 - Ship `@types/leaflet` as a regular dependency so TypeScript consumers no
