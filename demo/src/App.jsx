@@ -87,10 +87,23 @@ async function buildFlights(baseUrl) {
   for (let i = 0; i < hubs.length; i++) {
     const from = hubs[i]
     const to = hubs[(i * 7 + 3) % hubs.length]
-    const latlngs = []
+    // Split the great-circle path at the antimeridian. A naive [170, -170]
+    // jump makes Leaflet draw a horizontal line all the way across the map
+    // (visible as flat lines hugging the top/bottom of the world view).
+    const segments = []
+    let segment = []
     for (let s = 0; s <= 64; s++) {
-      latlngs.push(greatCircle(from.lat, from.lng, to.lat, to.lng, s / 64))
+      const point = greatCircle(from.lat, from.lng, to.lat, to.lng, s / 64)
+      if (
+        segment.length > 0 &&
+        Math.abs(point[1] - segment[segment.length - 1][1]) > 180
+      ) {
+        segments.push(segment)
+        segment = []
+      }
+      segment.push(point)
     }
+    if (segment.length > 0) segments.push(segment)
     const marker = new WebGLMarker({
       latlng: [from.lat, from.lng],
       rotation: bearing(from.lat, from.lng, to.lat, to.lng),
@@ -101,7 +114,7 @@ async function buildFlights(baseUrl) {
       marker,
       from,
       to,
-      latlngs,
+      latlngs: segments,
       progress: Math.random() * 0.9,
       direction: 1,
       // One leg in 25-55 seconds.
