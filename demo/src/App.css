@@ -125,6 +125,28 @@ body,
   gap: 7px;
 }
 
+.timeline {
+  margin-bottom: 12px;
+}
+
+.timeline .seg {
+  margin-bottom: 8px;
+}
+
+.timeline input[type='range'] {
+  width: 100%;
+  accent-color: #38e1ff;
+}
+
+.timeline-dates {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: #79a8bd;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
 .swatch {
   flex: none;
   width: 10px;

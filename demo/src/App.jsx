@@ -7,7 +7,7 @@
  * - Earthquakes: last-30-days M2.5+ from USGS (public domain, live with fallback)
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   MapContainer,
   TileLayer,
@@ -195,8 +195,44 @@ const DATASETS = {
 
 // ─────────────────────────────── layer overlay ───────────────────────────────
 
-function WebGLOverlay({ dataset, count, onStats }) {
+function WebGLOverlay({
+  dataset,
+  count,
+  onStats,
+  onQuakeRange,
+  quakeFilter = { enabled: false, current: 0 },
+  playing = false,
+}) {
   const map = useMap()
+  const layerRef = useRef(null)
+  const sizeRef = useRef(0)
+  const sortedRef = useRef([]) // [{ t, m }] sorted by quake time
+  const shownRef = useRef(0)
+  const popsRef = useRef(new Map())
+
+  // One-shot size pop; supports several concurrent markers (time-lapse ticks).
+  const animatePop = useCallback((marker) => {
+    const layer = layerRef.current
+    if (!layer) return
+    const active = popsRef.current.get(marker.id)
+    if (active) cancelAnimationFrame(active)
+    const base = sizeRef.current || 9
+    const start = performance.now()
+    const duration = 260
+    const tick = () => {
+      if (!popsRef.current.has(marker.id)) return
+      const t = (performance.now() - start) / duration
+      if (t >= 1) {
+        popsRef.current.delete(marker.id)
+        layer.updateMarker(marker.id, { size: null })
+        return
+      }
+      const factor = 1 + 0.7 * Math.sin(Math.PI * Math.pow(t, 0.55))
+      layer.updateMarker(marker.id, { size: Math.max(3, base * factor) })
+      popsRef.current.set(marker.id, requestAnimationFrame(tick))
+    }
+    popsRef.current.set(marker.id, requestAnimationFrame(tick))
+  }, [])
 
   useEffect(() => {
     const cfg = DATASETS[dataset]
@@ -208,6 +244,11 @@ function WebGLOverlay({ dataset, count, onStats }) {
 
     const layer = new WebGLMarkerLayer({ iconSize: cfg.iconSize, textureUrl })
     layer.addTo(map)
+    const pops = popsRef.current
+    layerRef.current = layer
+    sizeRef.current = cfg.iconSize
+    sortedRef.current = []
+    shownRef.current = 0
 
     let markers = []
     let cancelled = false
@@ -216,21 +257,8 @@ function WebGLOverlay({ dataset, count, onStats }) {
     let hoverMarker = null
     let hovered = false
     let hoverRaf = null
-    let popMarkerId = null
-    let popRaf = null
 
     const baseSize = () => currentSize ?? cfg.iconSize
-
-    const stopPop = () => {
-      if (popRaf) {
-        cancelAnimationFrame(popRaf)
-        popRaf = null
-      }
-      if (popMarkerId != null) {
-        layer.updateMarker(popMarkerId, { size: null })
-        popMarkerId = null
-      }
-    }
 
     const stopPulse = () => {
       if (hoverRaf) {
@@ -260,37 +288,13 @@ function WebGLOverlay({ dataset, count, onStats }) {
       hoverRaf = requestAnimationFrame(tick)
     }
 
-    const playPop = (marker) => {
-      stopPop()
-      stopPulse()
-      popMarkerId = marker.id
-      const start = performance.now()
-      const duration = 260
-      const tick = () => {
-        if (popMarkerId !== marker.id) return
-        const t = (performance.now() - start) / duration
-        if (t >= 1) {
-          popRaf = null
-          popMarkerId = null
-          layer.updateMarker(marker.id, { size: null })
-          return
-        }
-        const factor = 1 + 0.7 * Math.sin(Math.PI * Math.pow(t, 0.55))
-        layer.updateMarker(marker.id, {
-          size: Math.max(3, baseSize() * factor),
-        })
-        popRaf = requestAnimationFrame(tick)
-      }
-      popRaf = requestAnimationFrame(tick)
-    }
-
     const report = () => {
       let visible = null
       if (dataset !== 'synthetic' && markers.length > 0) {
         const bounds = map.getBounds()
         let n = 0
         for (const m of markers) {
-          if (bounds.contains(m.latlng)) n++
+          if (m.visible !== false && bounds.contains(m.latlng)) n++
         }
         visible = n
       }
@@ -304,6 +308,7 @@ function WebGLOverlay({ dataset, count, onStats }) {
       const next = Math.max(3, Math.round(cfg.iconSize * f * 10) / 10)
       if (next !== currentSize) {
         currentSize = next
+        sizeRef.current = next
         layer.setIconSize(next)
       }
     }
@@ -320,7 +325,8 @@ function WebGLOverlay({ dataset, count, onStats }) {
     })
 
     layer.on('click', (e) => {
-      playPop(e.marker)
+      stopPulse()
+      animatePop(e.marker)
       if (activePopup) {
         activePopup.close()
         activePopup = null
@@ -376,6 +382,16 @@ function WebGLOverlay({ dataset, count, onStats }) {
           markers = await makeQuakeMarkers(baseUrl)
         }
         if (cancelled) return
+        if (dataset === 'earthquakes') {
+          const sorted = markers
+            .map((m) => ({ t: m.data.time ?? 0, m }))
+            .sort((a, b) => a.t - b.t)
+          sortedRef.current = sorted
+          shownRef.current = sorted.length
+          if (sorted.length > 0) {
+            onQuakeRange?.({ min: sorted[0].t, max: sorted[sorted.length - 1].t })
+          }
+        }
         layer.setMarkers(markers)
         applySizeForZoom()
         report()
@@ -388,14 +404,57 @@ function WebGLOverlay({ dataset, count, onStats }) {
     return () => {
       cancelled = true
       stopPulse()
-      stopPop()
+      for (const raf of pops.values()) cancelAnimationFrame(raf)
+      pops.clear()
       map.off('click', closeOnBlank)
       map.off('moveend', report)
       map.off('zoomend', applySizeForZoom)
       if (activePopup) activePopup.close()
       layer.remove()
     }
-  }, [map, dataset, count, onStats])
+  }, [map, dataset, count, onStats, onQuakeRange, animatePop])
+
+  // Apply the time filter without rebuilding the layer.
+  useEffect(() => {
+    const layer = layerRef.current
+    const sorted = sortedRef.current
+    if (!layer || dataset !== 'earthquakes' || sorted.length === 0) return
+
+    if (!quakeFilter.enabled) {
+      for (const item of sorted) {
+        if (item.m.visible !== true) layer.updateMarker(item.m.id, { visible: true })
+      }
+      shownRef.current = sorted.length
+    } else {
+      let lo = 0
+      let hi = sorted.length
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1
+        if (sorted[mid].t <= quakeFilter.current) lo = mid + 1
+        else hi = mid
+      }
+      const desired = lo
+      const prev = shownRef.current
+      if (desired < prev) {
+        for (let i = desired; i < prev; i++) {
+          layer.updateMarker(sorted[i].m.id, { visible: false })
+        }
+      } else if (desired > prev) {
+        for (let i = prev; i < desired; i++) {
+          layer.updateMarker(sorted[i].m.id, { visible: true })
+          if (playing) animatePop(sorted[i].m)
+        }
+      }
+      shownRef.current = desired
+    }
+
+    const bounds = map.getBounds()
+    let onScreen = 0
+    for (let i = 0; i < shownRef.current; i++) {
+      if (bounds.contains(sorted[i].m.latlng)) onScreen++
+    }
+    onStats?.({ markers: layer.count, zoom: map.getZoom(), visible: onScreen })
+  }, [quakeFilter, dataset, playing, map, onStats, animatePop])
 
   return null
 }
@@ -404,7 +463,19 @@ function WebGLOverlay({ dataset, count, onStats }) {
 
 const SYNTHETIC_COUNTS = [50000, 200000, 1000000]
 
-function Controls({ dataset, setDataset, count, setCount, stats }) {
+function Controls({
+  dataset,
+  setDataset,
+  count,
+  setCount,
+  stats,
+  quakeRange,
+  quakeFilter,
+  playing,
+  onTogglePlay,
+  onScrub,
+  onReset,
+}) {
   const cfg = DATASETS[dataset]
   const fmt = (n) => (n == null ? '—' : n.toLocaleString('en-US'))
 
@@ -442,6 +513,52 @@ function Controls({ dataset, setDataset, count, setCount, stats }) {
               {fmt(n)}
             </button>
           ))}
+        </div>
+      )}
+
+      {dataset === 'earthquakes' && quakeRange && (
+        <div className="timeline">
+          <div className="seg">
+            <button type="button" onClick={onTogglePlay}>
+              {playing ? 'Pause' : 'Play'}
+            </button>
+            <button type="button" onClick={onReset}>
+              Reset
+            </button>
+          </div>
+          <input
+            type="range"
+            min={quakeRange.min}
+            max={quakeRange.max}
+            step={3600000}
+            value={Math.min(
+              Math.max(quakeFilter.current, quakeRange.min),
+              quakeRange.max
+            )}
+            onChange={(e) => onScrub(Number(e.target.value))}
+          />
+          <div className="timeline-dates">
+            <span>
+              {new Date(quakeRange.min).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+            <span>
+              {new Date(quakeFilter.current).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </span>
+            <span>
+              {new Date(quakeRange.max).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
         </div>
       )}
 
@@ -483,9 +600,69 @@ function Controls({ dataset, setDataset, count, setCount, stats }) {
 export default function App() {
   const [dataset, setDataset] = useState('airports')
   const [count, setCount] = useState(200000)
-  const [stats, setStats] = useState({ markers: 0, zoom: 5, visible: null })
+  const [stats, setStats] = useState({ markers: 0, zoom: 2, visible: null })
+  const [quakeRange, setQuakeRange] = useState(null)
+  const [quakeFilter, setQuakeFilter] = useState({ enabled: false, current: 0 })
+  const [playing, setPlaying] = useState(false)
+  const playFromRef = useRef(0)
 
   const handleStats = useCallback((next) => setStats(next), [])
+  const handleQuakeRange = useCallback(({ min, max }) => {
+    setQuakeRange({ min, max })
+    setQuakeFilter({ enabled: false, current: min })
+    setPlaying(false)
+  }, [])
+
+  const selectDataset = useCallback((key) => {
+    setPlaying(false)
+    setDataset(key)
+  }, [])
+
+  const togglePlay = useCallback(() => {
+    if (!quakeRange) return
+    if (playing) {
+      setPlaying(false)
+      return
+    }
+    const from =
+      quakeFilter.current >= quakeRange.max - 1
+        ? quakeRange.min
+        : quakeFilter.current
+    playFromRef.current = from
+    setQuakeFilter({ enabled: true, current: from })
+    setPlaying(true)
+  }, [quakeRange, playing, quakeFilter])
+
+  const handleScrub = useCallback((value) => {
+    setPlaying(false)
+    setQuakeFilter({ enabled: true, current: value })
+  }, [])
+
+  const handleReset = useCallback(() => {
+    setPlaying(false)
+    setQuakeFilter({ enabled: false, current: quakeRange?.min ?? 0 })
+  }, [quakeRange])
+
+  useEffect(() => {
+    if (!playing || !quakeRange) return
+    const from = playFromRef.current || quakeRange.min
+    const span = quakeRange.max - from
+    const durationMs = 16000
+    const started = performance.now()
+    let raf = 0
+    const tick = () => {
+      const next = from + (performance.now() - started) * (span / durationMs)
+      if (next >= quakeRange.max) {
+        setQuakeFilter({ enabled: true, current: quakeRange.max })
+        setPlaying(false)
+        return
+      }
+      setQuakeFilter({ enabled: true, current: next })
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [playing, quakeRange])
 
   return (
     <div className="app">
@@ -500,14 +677,27 @@ export default function App() {
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           subdomains="abcd"
         />
-        <WebGLOverlay dataset={dataset} count={count} onStats={handleStats} />
+        <WebGLOverlay
+          dataset={dataset}
+          count={count}
+          onStats={handleStats}
+          onQuakeRange={handleQuakeRange}
+          quakeFilter={quakeFilter}
+          playing={playing}
+        />
       </MapContainer>
       <Controls
         dataset={dataset}
-        setDataset={setDataset}
+        setDataset={selectDataset}
         count={count}
         setCount={setCount}
         stats={stats}
+        quakeRange={quakeRange}
+        quakeFilter={quakeFilter}
+        playing={playing}
+        onTogglePlay={togglePlay}
+        onScrub={handleScrub}
+        onReset={handleReset}
       />
     </div>
   )
