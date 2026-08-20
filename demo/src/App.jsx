@@ -45,7 +45,8 @@ function WebGLOverlay() {
     // Create the layer
     const layer = new WebGLMarkerLayer({
       iconSize: 38,
-      textureUrl: '/airplane.png',
+      // BASE_URL keeps the asset working both locally and under GitHub Pages.
+      textureUrl: `${import.meta.env.BASE_URL}airplane.png`,
     })
     layer.addTo(map)
 
