@@ -400,7 +400,8 @@ function IntroFlight() {
   useEffect(() => {
     map.stop()
     const timer = window.setTimeout(() => {
-      map.flyTo([35, 105], 5, { duration: 2.4 })
+      // Land on a full-world view: the datasets are global (airports + quakes).
+      map.flyTo([20, 10], 2, { duration: 2.2 })
     }, 250)
     return () => window.clearTimeout(timer)
   }, [map])
@@ -498,8 +499,8 @@ export default function App() {
   return (
     <div className="app">
       <MapContainer
-        center={[20, 30]}
-        zoom={2}
+        center={[5, 10]}
+        zoom={1.5}
         scrollWheelZoom
         style={{ width: '100%', height: '100%' }}
       >
