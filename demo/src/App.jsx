@@ -242,7 +242,7 @@ const DATASETS = {
   },
   airports: {
     label: 'Airports',
-    iconSize: 16,
+    iconSize: 22,
     lodFloor: 0.6,
     texture: 'airplane',
     legend: [
