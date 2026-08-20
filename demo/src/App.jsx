@@ -214,6 +214,7 @@ function WebGLOverlay({ dataset, count, onStats }) {
     let activePopup = null
     let currentSize = null
     let hoverMarker = null
+    let hovered = false
     let hoverRaf = null
     let popMarkerId = null
     let popRaf = null
@@ -309,10 +310,12 @@ function WebGLOverlay({ dataset, count, onStats }) {
 
     layer.on('mouseover', (e) => {
       map.getContainer().style.cursor = 'pointer'
+      hovered = true
       startPulse(e.marker)
     })
     layer.on('mouseout', () => {
       map.getContainer().style.cursor = ''
+      hovered = false
       stopPulse()
     })
 
@@ -351,6 +354,9 @@ function WebGLOverlay({ dataset, count, onStats }) {
     })
 
     const closeOnBlank = () => {
+      // Clicking a marker opens the popup in the layer's own click handler,
+      // which runs first; keep it open when the pointer is on a marker.
+      if (hovered) return
       if (activePopup) {
         activePopup.close()
         activePopup = null
@@ -390,22 +396,6 @@ function WebGLOverlay({ dataset, count, onStats }) {
       layer.remove()
     }
   }, [map, dataset, count, onStats])
-
-  return null
-}
-
-// Cinematic opening: fly from a world view down to the default region.
-function IntroFlight() {
-  const map = useMap()
-
-  useEffect(() => {
-    map.stop()
-    const timer = window.setTimeout(() => {
-      // Land on a full-world view: the datasets are global (airports + quakes).
-      map.flyTo([20, 10], 2, { duration: 2.2 })
-    }, 250)
-    return () => window.clearTimeout(timer)
-  }, [map])
 
   return null
 }
@@ -500,8 +490,8 @@ export default function App() {
   return (
     <div className="app">
       <MapContainer
-        center={[5, 10]}
-        zoom={1.5}
+        center={[20, 10]}
+        zoom={2}
         scrollWheelZoom
         style={{ width: '100%', height: '100%' }}
       >
@@ -510,7 +500,6 @@ export default function App() {
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           subdomains="abcd"
         />
-        <IntroFlight />
         <WebGLOverlay dataset={dataset} count={count} onStats={handleStats} />
       </MapContainer>
       <Controls

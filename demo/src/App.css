@@ -15,6 +15,12 @@ body,
   width: 100%;
 }
 
+/* The Web Mercator world is a rectangle: at low zooms on wide screens the
+   area outside the world shows the container background. */
+.leaflet-container {
+  background: #060d15;
+}
+
 .app {
   height: 100%;
   width: 100%;
