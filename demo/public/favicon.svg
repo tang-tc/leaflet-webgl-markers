@@ -5,9 +5,23 @@
       <stop offset="1" stop-color="#c9f2ff" />
     </linearGradient>
   </defs>
+
   <rect x="6" y="6" width="116" height="116" rx="26" fill="#0a141d" />
-  <rect x="6" y="6" width="116" height="116" rx="26" fill="none" stroke="#38e1ff" stroke-opacity="0.45" stroke-width="2" />
-  <g transform="translate(32,32)">
+  <rect x="6" y="6" width="116" height="116" rx="26" fill="none" stroke="#38e1ff" stroke-opacity="0.4" stroke-width="2" />
+
+  <!-- GIS globe with graticule -->
+  <g fill="none">
+    <circle cx="64" cy="64" r="40" stroke="#38e1ff" stroke-opacity="0.8" stroke-width="1.6" />
+    <ellipse cx="64" cy="64" rx="40" ry="16" stroke="#2f7d9c" stroke-width="1" />
+    <ellipse cx="64" cy="64" rx="40" ry="32" stroke="#2f7d9c" stroke-width="1" />
+    <ellipse cx="64" cy="64" rx="16" ry="40" stroke="#2f7d9c" stroke-width="1" />
+    <ellipse cx="64" cy="64" rx="32" ry="40" stroke="#2f7d9c" stroke-width="1" />
+    <line x1="24" y1="64" x2="104" y2="64" stroke="#2f7d9c" stroke-width="1" />
+    <line x1="64" y1="24" x2="64" y2="104" stroke="#2f7d9c" stroke-width="1" />
+  </g>
+
+  <!-- plane mark -->
+  <g transform="translate(34,36) scale(0.88)">
     <path d="M32 18 L8 34 L15 37 L27 34 L30 39 L32 42 Z" fill="#38e1ff" />
     <path d="M32 18 L56 34 L49 37 L37 34 L34 39 L32 42 Z" fill="#38e1ff" />
     <path d="M32 45 L21 50 L23 53.5 L32 55 Z" fill="#8fd8ef" />
