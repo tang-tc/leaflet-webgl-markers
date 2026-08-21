@@ -256,7 +256,7 @@ const DATASETS = {
   airports: {
     label: 'Airports',
     iconSize: 22,
-    minFactor: 0.38,
+    minFactor: 0.28,
     maxFactor: 1.3,
     texture: 'airplane',
     legend: [
