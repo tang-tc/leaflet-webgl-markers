@@ -46,8 +46,8 @@ npm run build     # build the library, then the demo (demo consumes dist like a 
 npm run lint      # lint the library and the demo
 ```
 
-The demo uses [AMap](https://www.amap.com/) tiles; no API key is required for
-the demo.
+The demo uses [CARTO](https://carto.com/) dark basemap tiles with OSM + CARTO
+attribution; no API key is required.
 
 ## License
 

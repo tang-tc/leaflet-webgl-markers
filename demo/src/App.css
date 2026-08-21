@@ -26,12 +26,6 @@ body,
   width: 100%;
 }
 
-.map-panel {
-  height: 100%;
-  width: 100%;
-  position: relative;
-}
-
 .controls {
   position: fixed;
   top: 12px;
@@ -127,6 +121,12 @@ body,
 
 .timeline {
   margin-bottom: 12px;
+}
+
+.loading-note {
+  margin-bottom: 12px;
+  color: #79a8bd;
+  font-size: 12px;
 }
 
 .timeline .seg {

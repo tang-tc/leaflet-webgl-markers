@@ -1,10 +1,11 @@
 /**
  * App.jsx — leaflet-webgl-markers showcase
  *
- * Three datasets share one WebGLMarkerLayer:
+ * Four scenes share one WebGLMarkerLayer:
  * - Synthetic: up to 1M random points (HSL colored, airplane icons)
  * - Airports: ~48k real airports from OurAirports (public domain)
  * - Earthquakes: last-30-days M2.5+ from USGS (public domain, live with fallback)
+ * - Flights: planes flying great-circle routes between real hub airports
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -187,14 +188,22 @@ function quakeColor(mag) {
   return [0.35, 0.74, 0.9]
 }
 
+// Raw USGS features cached across scene switches so re-entering Earthquakes
+// does not refetch the feed; fresh WebGLMarker objects are still built per
+// mount (markers are mutable and should not leak state between layers).
+let quakeSourceCache = null
+
 async function makeQuakeMarkers(baseUrl) {
   try {
-    const res = await fetch(
-      'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson'
-    )
-    if (!res.ok) throw new Error(String(res.status))
-    const json = await res.json()
-    return json.features.map((f) => {
+    if (!quakeSourceCache) {
+      const res = await fetch(
+        'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month.geojson'
+      )
+      if (!res.ok) throw new Error(String(res.status))
+      const json = await res.json()
+      quakeSourceCache = json.features
+    }
+    return quakeSourceCache.map((f) => {
       const [lng, lat] = f.geometry.coordinates
       return new WebGLMarker({
         latlng: [lat, lng],
@@ -346,6 +355,7 @@ function WebGLOverlay({
   count,
   onStats,
   onQuakeRange,
+  onQuakeLoading,
   quakeFilter = { enabled: false, current: 0 },
   playing = false,
   flightsPlaying = true,
@@ -405,9 +415,10 @@ function WebGLOverlay({
     let markers = []
     let cancelled = false
     let activePopup = null
+    let activePopupRoute = null
     let currentSize = null
     let hoverMarker = null
-    let hovered = false
+    let markerClickPending = false
     let hoverRaf = null
     let flightRaf = null
     let polylines = []
@@ -472,21 +483,24 @@ function WebGLOverlay({
 
     layer.on('mouseover', (e) => {
       map.getContainer().style.cursor = 'pointer'
-      hovered = true
       startPulse(e.marker)
     })
     layer.on('mouseout', () => {
       map.getContainer().style.cursor = ''
-      hovered = false
       stopPulse()
     })
 
     layer.on('click', (e) => {
+      // The layer's click listener is registered before closeOnBlank, so this
+      // runs first within the same click dispatch; the flag makes the popup
+      // survive fast clicks / taps where hover has not been processed yet.
+      markerClickPending = true
       stopPulse()
       animatePop(e.marker)
       if (activePopup) {
         activePopup.close()
         activePopup = null
+        activePopupRoute = null
       }
       const d = e.marker.data
       let title = ''
@@ -500,6 +514,7 @@ function WebGLOverlay({
           ['Type', d.type],
         ]
       } else if (dataset === 'flights') {
+        activePopupRoute = e.marker.id
         title = `${d.from} → ${d.to}`
         rows = [
           ['From', d.from],
@@ -523,12 +538,14 @@ function WebGLOverlay({
     })
 
     const closeOnBlank = () => {
-      // Clicking a marker opens the popup in the layer's own click handler,
-      // which runs first; keep it open when the pointer is on a marker.
-      if (hovered) return
+      if (markerClickPending) {
+        markerClickPending = false
+        return
+      }
       if (activePopup) {
         activePopup.close()
         activePopup = null
+        activePopupRoute = null
       }
     }
     map.on('click', closeOnBlank)
@@ -537,6 +554,7 @@ function WebGLOverlay({
 
     const run = async () => {
       try {
+        if (dataset === 'earthquakes') onQuakeLoading?.(true)
         if (dataset === 'synthetic') {
           markers = makeSyntheticMarkers(count)
         } else if (dataset === 'flights') {
@@ -589,6 +607,9 @@ function WebGLOverlay({
                 )
                 const rot = bearing(lat, lng, lat2, lng2)
                 layer.updateMarker(r.marker.id, { latlng: [lat, lng], rotation: rot })
+                if (activePopup && activePopupRoute === r.marker.id) {
+                  activePopup.marker.setLatLng([lat, lng])
+                }
               }
               if (now - lastStats > 500) {
                 lastStats = now
@@ -618,7 +639,9 @@ function WebGLOverlay({
         layer.setMarkers(markers)
         applySizeForZoom()
         report()
+        if (dataset === 'earthquakes') onQuakeLoading?.(false)
       } catch (err) {
+        if (dataset === 'earthquakes') onQuakeLoading?.(false)
         console.error('[demo] failed to load dataset', err)
       }
     }
@@ -638,7 +661,7 @@ function WebGLOverlay({
       if (activePopup) activePopup.close()
       layer.remove()
     }
-  }, [map, dataset, count, onStats, onQuakeRange, animatePop])
+  }, [map, dataset, count, onStats, onQuakeRange, onQuakeLoading, animatePop])
 
   // Apply the time filter without rebuilding the layer.
   useEffect(() => {
@@ -697,6 +720,7 @@ function Controls({
   stats,
   quakeRange,
   quakeFilter,
+  quakeLoading,
   playing,
   onTogglePlay,
   onScrub,
@@ -744,7 +768,11 @@ function Controls({
         </div>
       )}
 
-      {dataset === 'earthquakes' && quakeRange && (
+      {dataset === 'earthquakes' && quakeLoading && (
+        <p className="loading-note">Loading USGS live feed…</p>
+      )}
+
+      {dataset === 'earthquakes' && !quakeLoading && quakeRange && (
         <div className="timeline">
           <div className="seg">
             <button type="button" onClick={onTogglePlay}>
@@ -756,6 +784,7 @@ function Controls({
           </div>
           <input
             type="range"
+            aria-label="Earthquake time filter"
             min={quakeRange.min}
             max={quakeRange.max}
             step={3600000}
@@ -773,12 +802,14 @@ function Controls({
               })}
             </span>
             <span>
-              {new Date(quakeFilter.current).toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {quakeFilter.enabled
+                ? new Date(quakeFilter.current).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'All events'}
             </span>
             <span>
               {new Date(quakeRange.max).toLocaleDateString('en-US', {
@@ -839,6 +870,7 @@ export default function App() {
   const [stats, setStats] = useState({ markers: 0, zoom: 2, visible: null })
   const [quakeRange, setQuakeRange] = useState(null)
   const [quakeFilter, setQuakeFilter] = useState({ enabled: false, current: 0 })
+  const [quakeLoading, setQuakeLoading] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [flightsPlaying, setFlightsPlaying] = useState(true)
   const playFromRef = useRef(0)
@@ -849,6 +881,7 @@ export default function App() {
     setQuakeFilter({ enabled: false, current: min })
     setPlaying(false)
   }, [])
+  const handleQuakeLoading = useCallback((loading) => setQuakeLoading(loading), [])
 
   const selectDataset = useCallback((key) => {
     setPlaying(false)
@@ -892,14 +925,21 @@ export default function App() {
     const durationMs = 16000
     const started = performance.now()
     let raf = 0
+    let lastUpdate = 0
     const tick = () => {
-      const next = from + (performance.now() - started) * (span / durationMs)
+      const now = performance.now()
+      const next = from + (now - started) * (span / durationMs)
       if (next >= quakeRange.max) {
         setQuakeFilter({ enabled: true, current: quakeRange.max })
         setPlaying(false)
         return
       }
-      setQuakeFilter({ enabled: true, current: next })
+      // Throttle to ~10 updates/s: each update re-renders React and recounts
+      // visible markers, which adds up quickly at 60fps.
+      if (now - lastUpdate >= 100) {
+        lastUpdate = now
+        setQuakeFilter({ enabled: true, current: next })
+      }
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
@@ -924,6 +964,7 @@ export default function App() {
           count={count}
           onStats={handleStats}
           onQuakeRange={handleQuakeRange}
+          onQuakeLoading={handleQuakeLoading}
           quakeFilter={quakeFilter}
           playing={playing}
           flightsPlaying={flightsPlaying}
@@ -937,6 +978,7 @@ export default function App() {
         stats={stats}
         quakeRange={quakeRange}
         quakeFilter={quakeFilter}
+        quakeLoading={quakeLoading}
         playing={playing}
         onTogglePlay={togglePlay}
         onScrub={handleScrub}
