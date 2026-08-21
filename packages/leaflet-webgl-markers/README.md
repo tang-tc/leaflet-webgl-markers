@@ -21,14 +21,29 @@ GPU Mercator projection + FBO picking + zero redraw while dragging/zooming.
   `pointer-events: none` plus map event delegation, and interaction events fire
   only when a marker is actually hit.
 
+## Demo
+
+Live demo: <https://tang-tc.github.io/leaflet-webgl-markers/> (1M markers,
+airports, flights, and an earthquake timeline).
+
 ## Install
 
 ```bash
 npm install leaflet-webgl-markers
 ```
 
-Peer dependency: `leaflet@^1.9.0` (install it yourself). `@types/leaflet` is
-shipped as a regular dependency, so TypeScript users get the types automatically.
+## Requirements
+
+- [Leaflet](https://leafletjs.com/) 1.9.x (`^1.9.0`, install it yourself as a
+  peer dependency)
+- WebGL 1.0 with hardware acceleration enabled (the layer creates a `webgl`
+  context; failures fire an `error` event with `stage: 'context'`)
+- No other runtime dependencies; `@types/leaflet` is shipped as a regular
+  dependency so TypeScript users get the types automatically
+
+Works in all modern browsers (Chrome, Edge, Firefox, Safari) on desktop and
+mobile devices. Environments without WebGL, or with hardware acceleration
+disabled, are not supported.
 
 > ESM-only: there is no `main` field; you need a resolver that understands the
 > `exports` field (modern bundlers).
@@ -345,6 +360,15 @@ The layer listens to `webglcontextlost / webglcontextrestored`. On loss it drops
 all GL resources and fires `error` (`stage: 'context'`); on restore it rebuilds
 shaders + buffer + texture automatically and fires `load` again after a
 successful rebuild, avoiding a black screen.
+
+### Accessibility
+
+Markers are drawn on a WebGL canvas and are intentionally outside the DOM, so
+they are not keyboard-focusable and are not announced to screen readers. The
+plugin exposes pointer events only; keyboard navigation and screen-reader
+alternatives are left to the application (e.g. a fallback DOM list, or keyboard
+handlers built on your own data). If keyboard accessibility is a hard
+requirement, use a DOM-based marker plugin for the subset that needs it.
 
 ## Development
 

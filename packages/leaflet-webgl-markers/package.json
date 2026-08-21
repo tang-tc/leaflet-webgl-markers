@@ -2,6 +2,10 @@
   "name": "leaflet-webgl-markers",
   "version": "0.2.3",
   "description": "Leaflet WebGL plugin for rendering millions of point markers — GPU Mercator projection + FBO picking",
+  "author": {
+    "name": "Tang Chen",
+    "url": "https://github.com/tang-tc"
+  },
   "type": "module",
   "module": "./dist/leaflet-webgl-markers.js",
   "types": "./dist/index.d.ts",

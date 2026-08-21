@@ -6,6 +6,21 @@ A Leaflet plugin for rendering **millions of point markers** on a single WebGL
 canvas, with GPU-side Mercator projection, FBO color-coded picking, and zero
 redraw while the map is dragged or zoomed.
 
+## Demo
+
+Live demo: <https://tang-tc.github.io/leaflet-webgl-markers/> (1M markers,
+airports, flights, and an earthquake timeline).
+
+## Requirements
+
+- [Leaflet](https://leafletjs.com/) 1.9.x (`^1.9.0`)
+- WebGL 1.0 with hardware acceleration enabled
+- No other runtime dependencies
+
+Works in all modern browsers (Chrome, Edge, Firefox, Safari) on desktop and
+mobile devices. Environments without WebGL, or with hardware acceleration
+disabled, are not supported.
+
 ## Install
 
 ```bash
