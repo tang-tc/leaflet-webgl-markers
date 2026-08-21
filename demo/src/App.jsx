@@ -256,8 +256,30 @@ const DATASETS = {
   airports: {
     label: 'Airports',
     iconSize: 22,
-    minFactor: 0.28,
-    maxFactor: 1.3,
+    // Explicit pixel ramp: 4px at the world view, growing smoothly as you
+    // zoom in and capping at 29px. Sizes are absolute CSS pixels.
+    sizeForZoom: (z) =>
+      z <= 3
+        ? 4
+        : z <= 4
+          ? 6
+          : z <= 5
+            ? 8
+            : z <= 6
+              ? 10
+              : z <= 7
+                ? 13
+                : z <= 8
+                  ? 16
+                  : z <= 9
+                    ? 19
+                    : z <= 10
+                      ? 22
+                      : z <= 11
+                        ? 24
+                        : z <= 12
+                          ? 27
+                          : 29,
     texture: 'airplane',
     legend: [
       ['#ffbd4d', 'Large'],
@@ -285,6 +307,36 @@ const DATASETS = {
     texture: 'airplane',
     legend: [['#59d2ff', 'Planes on great-circle routes']],
   },
+}
+
+// Shared fallback curve for scenes without an explicit pixel ramp: scale the
+// base iconSize by a zoom factor clamped to the scene's min/max factors.
+function defaultSizeForZoom(cfg, z) {
+  const f =
+    z <= 3
+      ? 0.38
+      : z <= 4
+        ? 0.45
+        : z <= 5
+          ? 0.55
+          : z <= 6
+            ? 0.65
+            : z <= 7
+              ? 0.75
+              : z <= 8
+                ? 0.85
+                : z <= 9
+                  ? 0.95
+                  : z <= 10
+                    ? 1.05
+                    : z <= 12
+                      ? 1.18
+                      : 1.3
+  const factor = Math.min(
+    cfg.maxFactor ?? 1,
+    Math.max(cfg.minFactor ?? 0.38, f)
+  )
+  return Math.round(cfg.iconSize * factor)
 }
 
 // ─────────────────────────────── layer overlay ───────────────────────────────
@@ -407,35 +459,14 @@ function WebGLOverlay({
 
     const applySizeForZoom = () => {
       const z = map.getZoom()
-      const f =
-        z <= 3
-          ? 0.38
-          : z <= 4
-            ? 0.45
-            : z <= 5
-              ? 0.55
-              : z <= 6
-                ? 0.65
-                : z <= 7
-                  ? 0.75
-                  : z <= 8
-                    ? 0.85
-                    : z <= 9
-                      ? 0.95
-                      : z <= 10
-                        ? 1.05
-                        : z <= 12
-                          ? 1.18
-                          : 1.3
-      const factor = Math.min(
-        cfg.maxFactor ?? 1,
-        Math.max(cfg.minFactor ?? 0.38, f)
-      )
-      const next = Math.max(3, Math.round(cfg.iconSize * factor))
-      if (next !== currentSize) {
-        currentSize = next
-        sizeRef.current = next
-        layer.setIconSize(next)
+      const next = cfg.sizeForZoom
+        ? cfg.sizeForZoom(z)
+        : defaultSizeForZoom(cfg, z)
+      const rounded = Math.max(3, Math.round(next))
+      if (rounded !== currentSize) {
+        currentSize = rounded
+        sizeRef.current = rounded
+        layer.setIconSize(rounded)
       }
     }
 
