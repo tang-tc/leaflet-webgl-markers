@@ -54,8 +54,11 @@
     "webgl",
     "markers",
     "map",
+    "gis",
     "visualization",
-    "large-data"
+    "large-data",
+    "canvas",
+    "performance"
   ],
   "license": "MIT",
   "repository": {

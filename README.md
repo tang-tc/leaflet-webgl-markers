@@ -1,6 +1,7 @@
 # leaflet-webgl-markers
 
 [![npm version](https://img.shields.io/npm/v/leaflet-webgl-markers)](https://www.npmjs.com/package/leaflet-webgl-markers)
+[![CI](https://github.com/tang-tc/leaflet-webgl-markers/actions/workflows/ci.yml/badge.svg)](https://github.com/tang-tc/leaflet-webgl-markers/actions/workflows/ci.yml)
 
 A Leaflet plugin for rendering **millions of point markers** on a single WebGL
 canvas, with GPU-side Mercator projection, FBO color-coded picking, and zero
