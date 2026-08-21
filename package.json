@@ -12,9 +12,13 @@
     "build:lib": "npm run build -w leaflet-webgl-markers",
     "build": "npm run build:lib && npm run build -w demo",
     "dev": "npm run dev -w demo",
-    "lint": "oxlint packages/leaflet-webgl-markers/src demo/src"
+    "lint": "oxlint packages/leaflet-webgl-markers/src packages/leaflet-webgl-markers/tests demo/src",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "oxlint": "^1.71.0"
+    "jsdom": "^29.1.1",
+    "oxlint": "^1.71.0",
+    "vitest": "^4.1.11"
   }
 }
