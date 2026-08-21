@@ -22,6 +22,23 @@ GPU Mercator projection + FBO picking + zero redraw while dragging/zooming.
   `pointer-events: none` plus map event delegation, and interaction events fire
   only when a marker is actually hit.
 
+## Why this plugin
+
+Leaflet's built-in ways of drawing markers each hit a ceiling as data grows:
+
+| Approach | Scale | Drag/zoom behavior | Picking |
+|------|------|------|------|
+| `L.Marker` (DOM) | hundreds to low thousands | native, but every marker is a DOM node | native DOM events |
+| `L.Canvas` renderer | tens of thousands of vector shapes | redraws every frame while panning/zooming | geometry-based |
+| **leaflet-webgl-markers** | **millions of points** | CSS transform while moving, one redraw on `moveend` | FBO color-coded, O(1) |
+
+This plugin moves projection into the vertex shader and keeps lat/lng in GPU
+buffers: 1M markers do not become 1M DOM nodes, and dragging does not
+re-project anything on the CPU. The trade-off is that it needs WebGL 1.0 and
+draws points from a single shared texture — it does not render arbitrary DOM
+content, so use it for large-scale point visualization rather than a handful of
+custom interactive DOM markers.
+
 ## Demo
 
 Live demo: <https://tang-tc.github.io/leaflet-webgl-markers/> (1M markers,

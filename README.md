@@ -7,6 +7,13 @@ A Leaflet plugin for rendering **millions of point markers** on a single WebGL
 canvas, with GPU-side Mercator projection, FBO color-coded picking, and zero
 redraw while the map is dragged or zoomed.
 
+## Why
+
+DOM markers scale to hundreds, Leaflet's canvas renderer to tens of thousands
+of vector shapes; this plugin renders **millions** of points on one WebGL
+canvas with no redraw while dragging. See the [package
+README](packages/leaflet-webgl-markers) for a full comparison.
+
 ## Demo
 
 Live demo: <https://tang-tc.github.io/leaflet-webgl-markers/> (1M markers,
