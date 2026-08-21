@@ -19,6 +19,6 @@
   "devDependencies": {
     "jsdom": "^29.1.1",
     "oxlint": "^1.71.0",
-    "vitest": "^4.1.11"
+    "vitest": "^3.2.7"
   }
 }
