@@ -431,7 +431,7 @@ function WebGLOverlay({
         cfg.maxFactor ?? 1,
         Math.max(cfg.minFactor ?? 0.38, f)
       )
-      const next = Math.max(3, Math.round(cfg.iconSize * factor * 10) / 10)
+      const next = Math.max(3, Math.round(cfg.iconSize * factor))
       if (next !== currentSize) {
         currentSize = next
         sizeRef.current = next
