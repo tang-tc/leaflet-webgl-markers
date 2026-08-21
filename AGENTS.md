@@ -20,6 +20,7 @@ npm run dev          # demo against library source
 npm run build        # library first, then demo (against dist)
 npm run build:lib    # library only
 npm run lint         # oxlint over library + demo
+npm test             # vitest over packages/leaflet-webgl-markers/tests
 ```
 
 ## Non-negotiable invariants
@@ -47,14 +48,16 @@ Do not break any of these while refactoring:
 
 ## Release checklist
 
-- `npm run lint && npm run build` before committing.
+- `npm run lint && npm test && npm run build` before committing.
 - `npm publish` runs `prepublishOnly`, which rebuilds the package.
 - `dist/` is gitignored and regenerated at publish time; never commit it.
 - Keep `README.md` (package-level) in sync with the public API.
 
 ## Deferred work (by design)
 
-- Automated tests (vitest) — not set up yet.
+- GPU-path coverage (real WebGL context) — current vitest suite covers the pure
+  data model, constructor/CRUD validation, and the Evented mixin; shader
+  compilation, buffer upload, and picking still need a headless WebGL runner.
 - CPU-side pre-projection + generic affine transform (arbitrary CRS support).
 - float32 precision at deep zooms (~z18, several-pixel quantization).
 - Built-in LOD/subsampling — intentionally left to consumers via `setIconSize`.
