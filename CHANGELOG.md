@@ -2,6 +2,12 @@
 
 All notable changes to `leaflet-webgl-markers` are documented here.
 
+## 0.2.4 — 2026-08-21
+
+- Documentation and metadata refresh: README requirements (Leaflet 1.9.x,
+  WebGL 1.0, browser compatibility), live demo link, accessibility notes,
+  package author metadata, and the official Leaflet plugins list entry.
+
 ## 0.2.3 — 2026-08-20
 
 - Fix marker rotation direction: positive radians now rotate clockwise on
